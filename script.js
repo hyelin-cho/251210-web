@@ -219,6 +219,8 @@ function applyFilters() {
     return inCategory && inSearch;
   });
   renderBooks(filtered);
+
+  // 랜덤 굿즈 렌더링
   if (q) {
     renderRelatedGoods(q, filtered);
   } else {
@@ -226,6 +228,57 @@ function applyFilters() {
     if (goodsContainer) goodsContainer.innerHTML = "";
   }
 }
+// ==== 10. 검색어 기반 연관 굿즈 10개 출력 ====
+function renderRelatedGoods(keyword, filteredBooks) {
+  const container = document.getElementById("relatedGoods");
+  if (!container) return;
+  container.innerHTML = "";
+  if (filteredBooks.length === 0) return;
+  const bookCategories = Array.from(
+    new Set(filteredBooks.map((b) => b.category))
+  );
+  bookCategories.forEach((bookCat) => {
+    const goodsCat = categoryGoodsMap[bookCat];
+    if (!goodsCat) return;
+    let related = goodsData.filter(
+      (item) =>
+        item.category === goodsCat &&
+        keyword &&
+        item.title &&
+        item.title.toLowerCase().includes(keyword.toLowerCase())
+    );
+    if (related.length === 0) {
+      related = goodsData.filter((item) => item.category === goodsCat);
+    }
+    related = related.slice(0, 10);
+    if (related.length === 0) return;
+    const section = document.createElement("section");
+    section.className = "goods-section";
+    section.innerHTML = `
+      <h3>${bookCat} 검색("${keyword}") 관련 굿즈 – ${goodsCat} 추천</h3>
+    `;
+    const list = document.createElement("div");
+    list.className = "goods-list";
+    related.forEach((item) => {
+      const card = document.createElement("article");
+      card.className = "goods-card";
+      card.innerHTML = `
+        <a href="${item.detail_url}" target="_blank" rel="noopener noreferrer">
+          <img src="${item.thumbnail || ""}" alt="${item.title || ""}" />
+          <p class="goods-title">${item.title || ""}</p>
+          ${item.price
+          ? `<p class="goods-price">${item.price.toLocaleString()}원</p>`
+          : ""
+        }
+        </a>
+      `;
+      list.appendChild(card);
+    });
+    section.appendChild(list);
+    container.appendChild(section);
+  });
+}
+
 
 // ==== 6. 책 검색 필터 기능 실행 ====
 document.getElementById("searchInput").addEventListener("input", applyFilters);
