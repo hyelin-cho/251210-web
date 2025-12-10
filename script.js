@@ -138,6 +138,13 @@ const GOODS_JSON_URL =
 let booksData = [];
 let goodsData = [];
 
+// booksData & goodsData
+const categoryGoodsMap = {
+  "국내도서_경제경영": "학습/독서",
+  "국내도서_IT": "디지털",
+  "국내도서_자기계발": "디자인문구"
+};
+
 async function loadAllData() {
   const [booksRes, goodsRes] = await Promise.all([
     fetch(BOOKS_JSON_URL),
@@ -220,7 +227,7 @@ function applyFilters() {
   });
   renderBooks(filtered);
 
-  // 랜덤 굿즈 렌더링
+  // 굿즈 검색 및 렌더링
   if (q) {
     renderRelatedGoods(q, filtered);
   } else {
@@ -251,7 +258,9 @@ function renderRelatedGoods(keyword, filteredBooks) {
       related = goodsData.filter((item) => item.category === goodsCat);
     }
     related = related.slice(0, 10);
+
     if (related.length === 0) return;
+
     const section = document.createElement("section");
     section.className = "goods-section";
     section.innerHTML = `
