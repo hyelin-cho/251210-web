@@ -1,6 +1,7 @@
 // ==== 7. Firebase Auth ====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
+// ==== 8. Firebase Auth ====
 import {
   getAuth,
   GithubAuthProvider,
@@ -18,6 +19,7 @@ import {
   onSnapshot,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 import {
   getStorage,
   ref,
@@ -26,12 +28,13 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDQCLQtmS2aiJzxD4e7EsOXy7Ew89Hi7fM",
-  authDomain: "finalproject-api-251209.firebaseapp.com",
-  projectId: "finalproject-api-251209",
-  storageBucket: "finalproject-api-251209.firebasestorage.app",
-  messagingSenderId: "609885297100",
-  appId: "1:609885297100:web:0d46714b58b9ba842f2569",
+  apiKey: "AIzaSyA4E3nG9RCtE2pCf3z_EmN46S60MBx7NQQ",
+  authDomain: "finalproject-251209-9fd23.firebaseapp.com",
+  projectId: "finalproject-251209-9fd23",
+  storageBucket: "finalproject-251209-9fd23.firebasestorage.app",
+  messagingSenderId: "1065435916808",
+  appId: "1:1065435916808:web:182de4034a941d4cc63fbd",
+  measurementId: "G-CD8FTKFB5R"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -66,6 +69,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ==== 8. Firebase Chat ====
+
 const chatMessages = document.getElementById("chatMessages");
 const chatForm = document.getElementById("chatForm");
 const chatInput = document.getElementById("chatInput");
