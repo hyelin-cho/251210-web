@@ -138,12 +138,20 @@ const GOODS_JSON_URL =
 let booksData = [];
 let goodsData = [];
 
+//supabase SQL 로드
+const SUPABASE_URL = "https://artwplidvrliewuxlcbc.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFydHdwbGlkdnJsaWV3dXhsY2JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMzM2NzQsImV4cCI6MjA4MDkwOTY3NH0.sFbPfvlBCNluIi7VxgaJNUXIF4xz4iy8XTvliEDiQ4g";
+const SUPABASE_TABLE = "comments";
+
 // booksData & goodsData
 const categoryGoodsMap = {
   "국내도서_경제경영": "학습/독서",
   "국내도서_IT": "디지털",
   "국내도서_자기계발": "디자인문구"
 };
+
+let selectedBook = null;
+// const, let, var
 
 async function loadAllData() {
   const [booksRes, goodsRes] = await Promise.all([
@@ -288,6 +296,135 @@ function renderRelatedGoods(keyword, filteredBooks) {
   });
 }
 
+// ==== 11. supabase 댓글 렌더링 ====
+// 준 Fullstack : 프론트 + 백엔드
+// CRUD => Create, Read, Update, Delete
+// 사이트 구축.플랫폼 => CRUD
+// Create => 댓글 작성
+// Read => 타인 읽음
+// Update => 수정
+// Delete => 삭제
+
+// 댓글 버튼 클릭 이벤트 함수
+function openCommentSection(book) {
+  selectedBook = book;
+  document.getElementById(
+    "commentBookTitle"
+  ).textContent = `댓글 - ${book.title}`;
+  loadComments(book);
+}
+
+// 댓글 삭제 = D = Delete = 댓글 삭제
+async function deleteComment(id) {
+  if (!confirm("정말 이 댓글을 삭제할까요?")) return;
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${id}`,
+    {
+      method: "DELETE",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Prefer: "return=minimal",
+      },
+    }
+  );
+  if (!res.ok) {
+    console.error("삭제 실패", await res.text());
+    alert("댓글 삭제 중 오류가 발생했습니다.");
+    return;
+  }
+  await loadComments(selectedBook);
+}
+
+// 댓글 조회 = R = Read = 타인 읽음
+async function loadComments(book) {
+  const listEl = document.getElementById("commentList");
+  listEl.innerHTML = "<li>댓글 불러오는 중...</li>";
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?book_url=eq.${encodeURIComponent(
+      book.detail_url
+    )}&order=created_at.desc`;
+    const res = await fetch(url, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+    });
+    const rows = await res.json();
+    listEl.innerHTML = "";
+    const user = auth.currentUser;
+    if (rows.length === 0) {
+      listEl.innerHTML = "<li>첫 번째 댓글을 남겨보세요 :미소짓는_상기된_얼굴:</li>";
+    } else {
+      rows.forEach((row) => {
+        const li = document.createElement("li");
+        let html = `<strong>${row.nickname}</strong> : ${row.comment_text}`;
+        if (user && row.firebase_uid === user.uid) {
+          html += ` <button type="button" class="delete-comment" data-id="${row.id}">삭제</button>`;
+        }
+        li.innerHTML = html;
+        listEl.appendChild(li);
+      });
+      listEl.querySelectorAll(".delete-comment").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-id");
+          deleteComment(id);
+        });
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    listEl.innerHTML = "<li>댓글을 불러오는 중 오류가 발생했습니다.</li>";
+  }
+}
+
+// 댓글 생성 기능 = C = Create = 댓글 작성
+async function submitComment(e) {
+  e.preventDefault();
+  if (!selectedBook) {
+    alert("먼저 책을 선택해주세요.");
+    return;
+  }
+  const user = auth.currentUser; // Firebase 로그인 유저
+  if (!user) {
+    alert("댓글을 남기려면 먼저 GitHub로 로그인 해주세요.");
+    return;
+  }
+
+  const nickname = document.getElementById("commentNickname").value;
+  const text = document.getElementById("commentText").value;
+
+  const payload = {
+    book_url: selectedBook.detail_url, // 책 상세 페이지 URL
+    nickname, // 닉네임
+    comment_text: text, // 댓글 내용
+    firebase_uid: user.uid, // Firebase UID
+  };
+  // supabase 댓글 저장
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
+      method: "POST", // POST 요청
+      headers: {
+        apikey: SUPABASE_ANON_KEY, // API 키 
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`, // 인증 토큰
+        "Content-Type": "application/json", // 컨텐츠 타입
+        Prefer: "return=minimal", // 반환 형식
+      },
+      body: JSON.stringify(payload), // 요청 바디
+    });
+    if (!res.ok) throw new Error("댓글 저장 실패");
+    document.getElementById("commentText").value = "";
+    await loadComments(selectedBook);
+  } catch (err) {
+    console.error(err);
+    alert("댓글 저장 중 오류가 발생했습니다.");
+  }
+}
+
+// 이벤트 실행
+document
+  .getElementById("commentForm")
+  .addEventListener("submit", submitComment);
 
 // ==== 6. 책 검색 필터 기능 실행 ====
 document.getElementById("searchInput").addEventListener("input", applyFilters);
